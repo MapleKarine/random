@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Random Phonology</title>
+	<script src="segment.js"></script>
+	<script src="main.js"></script>
+	<script src="vowel_chart.js"></script>
+	<style>
+		* {
+			background: black;
+			color: white;
+		}
+
+		.vowel-chart-container {
+			position: relative;
+		}
+
+		.vowel-chart-svg {
+			fill: white;
+			stroke: white;
+		}
+
+		.vowel-chart-text-float-container {
+			position: absolute;
+			top: 0px;
+			left: 0px;
+		}
+
+		.vowel-chart-text-float.left {
+			transform: translate(-100%, -60%);
+		}
+
+		.vowel-chart-text-float.right {
+			transform: translate(0%, -60%);
+		}
+
+		.vowel-chart-text-float.middle {
+			transform: translate(-50%, -60%);
+		}
+
+		.vowel-chart-text-float {
+			position: absolute;
+			background: black;
+			color: white;
+
+			padding: 0px 4px;
+			border-radius: 6px;
+			user-select: none;
+			text-wrap-mode: nowrap;
+			line-height: 1em;
+		}
+
+		.vowel-chart-text-dot {
+			position: absolute;
+			display: block;
+			width: 6px;
+			height: 6px;
+			border-radius: 50%;
+			background-color: black;
+		}
+	</style>
+</head>
+<body>
+	<div style="display: flex;">
+		<div id="vowel-chart"></div>
+		<table id="cons-table" style="text-align: center;"></table>
+	</div>
+	<div id="sample-words" style="display: grid; grid-template-columns: repeat(8, 1fr); margin-top: 1em;"></div>
+	<script>
+		const consEl = document.getElementById('cons-table');
+		const vowelEl = document.getElementById('vowel-chart');
+		const wordsEl = document.getElementById('sample-words');
+
+		const m2 = {
+			"-fricative -nasal -sonorant -voice": 'stop 1',
+			"+voice -fricative -nasal -sonorant": 'stop 2',
+			"+spread -fricative -nasal -sonorant -voice": 'stop 3',
+			"+fricative -nasal -sonorant -voice": 'fricative',
+			"+ejective -fricative -nasal -sonorant -voice": 'ejective',
+			"+fricative +voice -nasal -sonorant": 'fricative ',
+			"+nasal -sonorant": 'nasal',
+			"+approx": 'approx',
+			"+approx +lateral": 'lateral',
+		}
+		const order = ['fricative', 'ejective', 'stop 3', 'stop 2', 'stop 1', 'nasal'];
+
+		function makeHTMLTable(inv) {
+			const force = inv.force;
+			
+			const places = ['*lab', '*dnt', '*cor', '*plv', '*rtr', '*pal', '*vel', '*vlb', '*uvu', '*ulb', '*glt'].filter(x => inv.force[x] !== '0' && inv.cons.some(y => y.includes(x)));
+			const manners = [...new Set(inv.cons.map(x=> String(removePlace(x))))]
+			const manners2 = manners.map((x,i)=>i)
+				.sort((b,a) => order.indexOf(String(m2[manners[a]]??manners[a]).trim()) - order.indexOf(String(m2[manners[b]]??manners[b]).trim()))
+
+			const head_row = document.createElement('tr');
+			consEl.appendChild(head_row);
+			head_row.appendChild(document.createElement('th'))
+			for (const place of places) {
+				const el = document.createElement('th');
+				el.innerText = place;
+				head_row.appendChild(el);
+			}
+
+			for (const [i, j] of manners2.entries()) {
+				const elRow = document.createElement('tr');
+				const elRowHead = document.createElement('th');
+				elRowHead.innerText = m2[manners[j]]??manners[j];
+				elRow.appendChild(elRowHead);
+				consEl.appendChild(elRow);
+				const manner = manners[j];
+				let empty = places.length;
+
+				for (const p of places) {
+					const el = document.createElement('td');
+					const seg = Seg(manner+' '+p);
+					if (force[seg]) {
+						if (force[seg] == '0') empty--;
+						el.innerText = force[seg] == '0' ? '' : IPA_TABLE[force[seg]];
+					} else if (inv.cons.map(x => String(x)).includes(String(seg))) {
+						el.innerText = IPA_TABLE[seg];
+					} else {
+						empty--;
+					}
+					elRow.appendChild(el);
+				}
+
+				if (empty==0) elRow.remove();
+			}
+
+			vowelEl.innerHTML = renderVowels(parse(inv.vowels.join(' '), DEFAULT_SETTINGS, (msg) => console.log(msg)));
+
+			const sampleWords = generate_syllable(inv);
+			wordsEl.innerHTML = sampleWords.map(x=>`<span>${x.word}</span>`).join(' ')
+		}
+
+
+		makeHTMLTable(generate_inventory())
+		
+	</script>
+
+</body>
+</html>
