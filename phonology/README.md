@@ -5,7 +5,7 @@
 - [x] Generate basic phonotactics
 - [ ] Generate sound rules
 - [ ] Generate diachronic plausible changes
-- [ ] Implosives
-- [ ] Prenasalized
+- [x] Implosives
+- [x] Prenasalized
 - [ ] Voiceless sonorants
 - [ ] Creaky/Breathy voice
